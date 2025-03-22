@@ -1,15 +1,18 @@
+# This workflow will build the GithubActionsDemo project
+
 name: MyWebApp
 
 on:
   push:
     branches:
-      - "main"
+    - "main"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
@@ -24,15 +27,13 @@ jobs:
     - name: Build and publish the app
       run: |
         dotnet build --no-restore
-        # Publicera varje projekt i lösningen och specifikera rätt path för varje
-        dotnet publish /path/to/your/project/MyWebApp.csproj -c Release -o ./publish
+        dotnet publish -c Release -o ./publish        
 
     - name: Upload app artifacts to Github
       uses: actions/upload-artifact@v4
       with:
         name: app-artifacts
         path: ./publish
-
   deploy:
     runs-on: self-hosted
     needs: build
@@ -43,22 +44,15 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Clean up old app files
-      run: |
-        sudo rm -rf /opt/MyWebApp/*
-
     - name: Stop the application service
       run: |
-        sudo systemctl stop MyWebApp.service
+        sudo systemctl stop MyWebApp.service        
 
-    - name: Deploy the application
+    - name: Deploy the the application
       run: |
-        sudo cp -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/ /opt/MyWebApp
+        sudo rm -Rf /opt/MyWebApp || true
+        sudo cp -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/ /opt/MyWebApp        
 
     - name: Start the application service
       run: |
-        sudo systemctl start MyWebApp.service
-
-    - name: Verify if application is running
-      run: |
-        curl http://localhost:5000  # Verify that the app is accessible
+        sudo systemctl start MyWebApp.service        
