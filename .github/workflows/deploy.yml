@@ -27,7 +27,11 @@ jobs:
     - name: Build and publish the app
       run: |
         dotnet build --no-restore
-        dotnet publish -c Release -o ./publish        
+        dotnet publish -c Release -o ./publish  
+    - name: Ensure SSH tunnel is up
+      run: |
+        ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
+        sleep 5 # wait for the tunnel to open      
 
     - name: Upload app artifacts to Github
       uses: actions/upload-artifact@v4
