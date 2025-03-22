@@ -1,0 +1,22 @@
+@model CloudSoft.Models.Subscriber
+
+@{
+    ViewData["Title"] = "Newsletter Signup";
+}
+
+<h2>Newsletter Signup</h2>
+
+@if (ViewBag.Message != null)
+{
+    <p style="color: green;">@ViewBag.Message</p>
+}
+
+<form asp-action="Subscribe" method="post">
+    <label asp-for="Name"></label>
+    <input asp-for="Name" class="form-control" />
+
+    <label asp-for="Email"></label>
+    <input asp-for="Email" class="form-control" />
+
+    <button type="submit">Sign Up</button>
+</form>
