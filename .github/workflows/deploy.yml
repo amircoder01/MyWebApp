@@ -34,7 +34,6 @@ jobs:
       with:
         name: app-artifacts
         path: ./publish
-  ...
 
   deploy:
     runs-on: self-hosted
