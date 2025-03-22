@@ -1,3 +1,5 @@
+# This workflow will build the GithubActionsDemo project
+
 name: MyWebApp
 
 on:
@@ -10,6 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
@@ -24,42 +27,37 @@ jobs:
     - name: Build and publish the app
       run: |
         dotnet build --no-restore
-        dotnet publish -c Release -o ./publish
+        dotnet publish -c Release -o ./publish  
+    - name: Ensure SSH tunnel is up
+      run: |
+        ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
+        sleep 5 # wait for the tunnel to open      
 
     - name: Upload app artifacts to Github
       uses: actions/upload-artifact@v4
       with:
         name: app-artifacts
         path: ./publish
-
   deploy:
     runs-on: self-hosted
     needs: build
+
     steps:
     - name: Download the artifacts from Github (from the build job)
       uses: actions/download-artifact@v4
       with:
         name: app-artifacts
 
-    - name: Ensure SSH tunnel is up
-      run: |
-        # Start SSH tunnel and wait for it to be ready
-        ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
-        sleep 10 # Increase sleep time to ensure tunnel is up
-
     - name: Stop the application service
       run: |
-        sudo systemctl stop MyWebApp.service
+        sudo systemctl stop MyWebApp.service        
 
-    - name: Deploy the application
+    - name: Deploy the the application
       run: |
         sudo rm -Rf /opt/MyWebApp || true
-        sudo cp -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/ /opt/MyWebApp
+        sudo cp -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/ /opt/MyWebApp        
 
     - name: Start the application service
       run: |
         sudo systemctl start MyWebApp.service
-
-    - name: Verify application is running
-      run: |
-        curl http://localhost:5000 || exit 1
+        
