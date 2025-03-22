@@ -1,30 +1,31 @@
-using MyWebApp.Models;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using MyWebApp.Models;
 
 namespace MyWebApp.Controllers;
 
-public class NewsletterController : Controller
+public class HomeController : Controller
 {
+    private readonly ILogger<HomeController> _logger;
 
-    [HttpGet]
-    public IActionResult Subscribe()
+    public HomeController(ILogger<HomeController> logger)
+    {
+        _logger = logger;
+    }
+
+    public IActionResult Index()
     {
         return View();
     }
 
-    [HttpPost]
-    public IActionResult Subscribe(Subscriber subscriber)
+    public IActionResult Privacy()
     {
-        // Add subscription logic here
-        // ...
-
-        // Write to the console
-        Console.WriteLine($"New subscription - Name: {subscriber.Name} Email: {subscriber.Email}");
-        
-        // Send a message to the user
-        ViewBag.Message = $"Thank you for subscribing, {subscriber.Name}!";
-
-        // Return the view
         return View();
+    }
+
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }
