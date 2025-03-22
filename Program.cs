@@ -1,19 +1,20 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Lägg till tjänster för kontroller och vyer
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Konfigurera HTTP-begärningspipelin
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // Standard HSTS-värde är 30 dagar. Du kanske vill ändra detta för produktionsscenarier.
     app.UseHsts();
 }
 
-//app.UseHttpsRedirection();
+// Aktivera HTTPS-omdirigering om du vill
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
