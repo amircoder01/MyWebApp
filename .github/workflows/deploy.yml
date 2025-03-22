@@ -31,13 +31,17 @@ jobs:
     - name: Ensure SSH tunnel is up
       run: |
         ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
-        sleep 5 # wait for the tunnel to open      
+        sleep 5 # wait for the tunnel to open
+    - name: List contents of publish folder
+        run: ls -R ./publish
+    
 
     - name: Upload app artifacts to Github
       uses: actions/upload-artifact@v4
       with:
         name: app-artifacts
         path: ./publish
+
   deploy:
     runs-on: self-hosted
     needs: build
