@@ -1,5 +1,3 @@
-# This workflow will build the GithubActionsDemo project
-
 name: MyWebApp
 
 on:
@@ -28,13 +26,14 @@ jobs:
       run: |
         dotnet build --no-restore
         dotnet publish -c Release -o ./publish  
+
     - name: Ensure SSH tunnel is up
       run: |
         ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
         sleep 5 # wait for the tunnel to open
+        
     - name: List contents of publish folder
-        run: ls -R ./publish
-    
+      run: ls -R ./publish
 
     - name: Upload app artifacts to Github
       uses: actions/upload-artifact@v4
@@ -56,7 +55,7 @@ jobs:
       run: |
         sudo systemctl stop MyWebApp.service        
 
-    - name: Deploy the the application
+    - name: Deploy the application
       run: |
         sudo rm -Rf /opt/MyWebApp || true
         sudo cp -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/ /opt/MyWebApp        
@@ -64,4 +63,3 @@ jobs:
     - name: Start the application service
       run: |
         sudo systemctl start MyWebApp.service
-        
