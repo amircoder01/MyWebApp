@@ -1,74 +1,75 @@
-name: MyWebApp
+name: Build & Deploy MyWebApp via Bastion
 
 on:
   push:
     branches:
-      - "main"
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Check out this repo
+      - name: Check out the repo
         uses: actions/checkout@v4
 
       - name: Restore dependencies
-        run: |
-          dotnet restore
+        run: dotnet restore
 
-      - name: Build and publish the app
+      - name: Build and publish MyWebApp
         run: |
           dotnet build --no-restore
-          dotnet publish -c Release -o ./publish  
+          dotnet publish -c Release -o ./publish
 
-      - name: List contents of publish folder
-        run: ls -R ./publish
-
-      - name: Upload app artifacts to Github
+      - name: Upload app artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: app-artifacts
+          name: mywebapp-artifacts
           path: ./publish
 
   deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: build
 
     steps:
-    - name: Download the artifacts from Github (from the build job)
-      uses: actions/download-artifact@v4
-      with:
-        name: app-artifacts
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: mywebapp-artifacts
+          path: ./mywebapp-artifacts
 
-    - name: Start SSH Tunnel from Bastion Host
-      run: |
-        # Start SSH tunnel from Bastion Host in background
-        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
-        # Wait for a few seconds to ensure the tunnel is up
-        sleep 20
-        # Verify the tunnel is up
-        netstat -an | grep 2222
+      - name: Debug – Show artifact contents
+        run: |
+          echo "Artifacts:"
+          ls -la ./mywebapp-artifacts
 
-    - name: Test SSH tunnel
-      run: |
-        # Test if we can connect via the tunnel using the private key stored in GitHub Secret
-        ssh -i /tmp/bastion_key.pem -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+      - name: Save Bastion SSH key
+        run: |
+          echo "${{ secrets.BASTION_KEY }}" > bastion_key.pem
+          chmod 600 bastion_key.pem
 
-    - name: Stop the application service
-      run: |
-        sudo systemctl stop MyWebApp.service
+      - name: Save AppServer SSH key
+        run: |
+          echo "${{ secrets.APPSERVER_KEY }}" > appserver_key.pem
+          chmod 600 appserver_key.pem
 
-    - name: Deploy the application
-      run: |
-        # Copy the files over to the server using SCP via the tunnel
-        scp -i /tmp/bastion_key.pem -P 2222 -r ./publish/* azureuser@localhost:/opt/MyWebApp/
+      - name: Start SSH tunnel from Bastion → AppServer
+        run: |
+          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -f -N -L 2222:10.0.0.4:22 azureuser@${{ secrets.BASTION_HOST }}
+          sleep 5
 
-    - name: Start the application service
-      run: |
-        sudo systemctl start MyWebApp.service
+      - name: Copy MyWebApp files to AppServer via tunnel
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add appserver_key.pem
+          scp -o StrictHostKeyChecking=no -P 2222 -r ./mywebapp-artifacts/* azureuser@localhost:/opt/MyWebApp/
+
+      - name: Restart MyWebApp service on AppServer
+        run: |
+          ssh -i appserver_key.pem -o StrictHostKeyChecking=no -p 2222 azureuser@localhost "sudo systemctl restart MyWebApp.service"
