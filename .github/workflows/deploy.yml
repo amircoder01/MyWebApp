@@ -51,14 +51,18 @@ jobs:
         ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &  # Startar SSH tunneln
         sleep 5  # Vänta på att tunneln öppnas
 
+    - name: Verify SSH tunnel is open
+      run: |
+        netstat -an | grep 2222  # Kontrollera att porten är öppen för tunneln
+
     - name: Stop the application service
       run: |
         sudo systemctl stop MyWebApp.service
 
     - name: Deploy the application
       run: |
-        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
-        # Kopiera filerna till app-servern via tunneln (localhost på port 2222)
+        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@10.0.0.4:/opt/MyWebApp/
+        # Byt ut localhost mot IP-adressen för din app-server via tunneln
 
     - name: Start the application service
       run: |
