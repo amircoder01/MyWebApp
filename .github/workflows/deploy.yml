@@ -51,20 +51,22 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         # Disable strict host key checking to prevent issues with first-time connections
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
+        # Ensure the SSH key is used for tunneling
+        export SSH_AUTH_SOCK=$(ls /tmp/ssh-*/agent.* | tail -n 1)
 
-    - name: Start SSH Tunnel via Bastion Host
+    - name: Start SSH Tunnel from Bastion Host
       run: |
-        # Start SSH tunnel from Bastion Host and keep it open
-        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
-        # Wait a bit to ensure the tunnel is established
+        # Start SSH tunnel and keep it open in the background
+        ssh -f -N -L 2222:10.0.0.4:22 -i ~/.ssh/id_rsa azureuser@98.71.41.249
+        # Give the tunnel time to establish
         sleep 20
         # Verify if the tunnel is up and listening on port 2222
         netstat -an | grep 2222
 
     - name: Test SSH tunnel connection
       run: |
-        # Test if we can connect via the tunnel
-        ssh -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+        # Test if we can connect via the tunnel using the correct private key
+        ssh -i ~/.ssh/id_rsa -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
       run: |
@@ -73,7 +75,7 @@ jobs:
     - name: Deploy the application
       run: |
         # Copy the files over to the server using SCP via the tunnel
-        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
+        scp -i ~/.ssh/id_rsa -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Start the application service
       run: |
