@@ -49,7 +49,7 @@ jobs:
     - name: Start SSH Tunnel and Wait for it to be available
       run: |
         # Start SSH tunnel and keep it open in the background
-        nohup ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
+        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
         # Give the tunnel time to establish
         sleep 20
         # Verify that the tunnel is up
