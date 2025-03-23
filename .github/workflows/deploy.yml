@@ -1,77 +1,65 @@
-name: MyWebApp
+name: MyWebApp .NET Deployment
 
 on:
   push:
     branches:
-    - "main"
+      - "main"
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Install .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Check out this repo
-      uses: actions/checkout@v4
-
-    - name: Restore dependencies (install Nuget packages)
-      run: dotnet restore
-
-    - name: Build and publish the app
-      run: |
-        dotnet build --no-restore
-        dotnet publish -c Release -o ./publish  
-
-    - name: List contents of publish folder
-      run: ls -R ./publish
-
-    - name: Upload app artifacts to Github
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-artifacts
-        path: ./publish
-
-  deploy:
     runs-on: self-hosted
-    needs: build
+
     steps:
-    - name: Download the artifacts from Github (from the build job)
-      uses: actions/download-artifact@v4
-      with:
-        name: app-artifacts
+      - name: Setup .NET
+        run: |
+          export DOTNET_ROOT=/home/azureuser/.dotnet
+          export PATH=/home/azureuser/.dotnet:$PATH
+          dotnet --info
 
-    - name: Create private SSH key file from secret
-      run: |
-        echo "${{ secrets.BASTION_SSH_KEY }}" > /tmp/bastion_key.pem
-        chmod 600 /tmp/bastion_key.pem  # Se till att den privata nyckeln har rätt behörigheter
+      - name: Check out this repo
+        uses: actions/checkout@v4
 
-    - name: Start SSH Tunnel and Wait for it to be available
-      run: |
-        # Start SSH tunnel from Bastion Host
-        ssh -f -N -L 2222:10.0.0.4:22 -i /tmp/bastion_key.pem azureuser@98.71.41.249
-        # Wait a bit to ensure the tunnel is up
-        sleep 20
-        # Verify if tunnel is up
-        netstat -an | grep 2222
+      - name: Restore dependencies
+        run: |
+          export DOTNET_ROOT=/home/azureuser/.dotnet
+          export PATH=/home/azureuser/.dotnet:$PATH
+          dotnet restore
 
-    - name: Test SSH tunnel
-      run: |
-        # Test if we can connect via the tunnel using GitHub Secret for private key
-        ssh -v -i /tmp/bastion_key.pem -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+      - name: Build with memory limits
+        run: |
+          export DOTNET_ROOT=/home/azureuser/.dotnet
+          export PATH=/home/azureuser/.dotnet:$PATH
+          export DOTNET_CLI_TELEMETRY_OPTOUT=1
+          dotnet build --no-restore --configuration Release /p:UseSharedCompilation=false
 
-    - name: Stop the application service
-      run: |
-        sudo systemctl stop MyWebApp.service
+      - name: Build and publish the app
+        run: |
+          export DOTNET_ROOT=/home/azureuser/.dotnet
+          export PATH=/home/azureuser/.dotnet:$PATH
+          dotnet build --no-restore MyWebApp.csproj
+          dotnet publish -c Release -o ./publish MyWebApp.csproj
 
-    - name: Deploy the application
-      run: |
-        # Copy the files over to the server using SCP via the tunnel
-        scp -i /tmp/bastion_key.pem -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
+      - name: Deploy to App Server via Bastion
+        run: |
+          # Lägg till Bastion till kända värdar och stäng av strikt host key checking
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 98.71.41.249 >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          
+          # Testa SSH-anslutning till Bastion
+          ssh -o StrictHostKeyChecking=no azureuser@98.71.41.249 'echo "Bastion connection successful"'
+          
+          # Kopiera filer till AppServer via Bastion
+          scp -o StrictHostKeyChecking=no -o "ProxyCommand ssh -A azureuser@98.71.41.249 nc %h %p" -r ./publish/* azureuser@10.0.0.4:/opt/MyWebApp/
+          
+          # Starta om tjänsten på AppServer
+          ssh -o StrictHostKeyChecking=no -A -J azureuser@98.71.41.249 azureuser@10.0.0.4 'sudo systemctl restart MyWebApp.service'
 
-    - name: Start the application service
-      run: |
-        sudo systemctl start MyWebApp.service
+      - name: Cleanup
+        if: always()
+        run: |
+          sudo systemctl restart walinuxagent || true
+          sudo apt-get clean
+          sudo rm -rf /tmp/*
+          pkill -f dotnet || true
