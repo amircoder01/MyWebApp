@@ -45,38 +45,17 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Set up SSH key for Bastion Host
+    - name: Copy files to Reverse Proxy Server (not Bastion Host)
       run: |
-        echo "${{ secrets.BASTION_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        # Disable strict host key checking to prevent issues with first-time connections
-        echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        # Ensure the SSH key is used for tunneling
-        export SSH_AUTH_SOCK=$(ls /tmp/ssh-*/agent.* | tail -n 1)
+        # Skicka artefakterna till Reverse Proxy Server via SCP
+        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@reverse-proxy-server-ip:/opt/MyWebApp/
 
-    - name: Start SSH Tunnel from Bastion Host
+    - name: Restart Reverse Proxy Server
       run: |
-        # Start SSH tunnel and keep it open in the background
-        ssh -f -N -L 2222:10.0.0.4:22 -i ~/.ssh/id_rsa azureuser@98.71.41.249
-        # Give the tunnel time to establish
-        sleep 20
-        # Verify if the tunnel is up and listening on port 2222
-        netstat -an | grep 2222
+        # Om du har Nginx som reverse proxy, behöver du starta om den för att ladda nya filer
+        sudo systemctl restart nginx
 
-    - name: Test SSH tunnel connection
+    - name: Restart the App service on the App Server
       run: |
-        # Test if we can connect via the tunnel using the correct private key
-        ssh -i ~/.ssh/id_rsa -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
-
-    - name: Stop the application service
-      run: |
-        sudo systemctl stop MyWebApp.service
-
-    - name: Deploy the application
-      run: |
-        # Copy the files over to the server using SCP via the tunnel
-        scp -i ~/.ssh/id_rsa -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
-
-    - name: Start the application service
-      run: |
-        sudo systemctl start MyWebApp.service
+        # Starta om appen på app-servern om det behövs
+        sudo systemctl restart MyWebApp.service
