@@ -1,4 +1,4 @@
-name: Build & Deploy CloudSoft via Bastion
+name: Build & Deploy MyWebApp via Bastion
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build and publish CloudSoft
+      - name: Build and publish MyWebApp
         run: |
           dotnet build --no-restore
           dotnet publish -c Release -o ./publish
@@ -30,7 +30,7 @@ jobs:
       - name: Upload app artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: cloudsoft-artifacts
+          name: mywebapp-artifacts
           path: ./publish
 
   deploy:
@@ -41,13 +41,13 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: cloudsoft-artifacts
-          path: ./cloudsoft-artifacts
+          name: mywebapp-artifacts
+          path: ./mywebapp-artifacts
 
       - name: Debug – Show contents of artifacts
         run: |
           echo "Artifacts:"
-          ls -la ./cloudsoft-artifacts
+          ls -la ./mywebapp-artifacts
 
       - name: Save Bastion SSH key
         run: |
@@ -59,12 +59,12 @@ jobs:
           ssh -i bastion_key.pem -o StrictHostKeyChecking=no -f -N -L 2222:10.0.0.4:22 azureuser@${{ secrets.BASTION_HOST }}
           sleep 5
 
-      - name: Copy CloudSoft files to AppServer via tunnel
+      - name: Copy MyWebApp files to AppServer via tunnel
         run: |
           eval "$(ssh-agent -s)"
           ssh-add bastion_key.pem
-          scp -o StrictHostKeyChecking=no -P 2222 -r ./cloudsoft-artifacts/* azureuser@localhost:~/cloudsoft/
+          scp -o StrictHostKeyChecking=no -P 2222 -r ./mywebapp-artifacts/* azureuser@localhost:/opt/MyWebApp/
 
-      - name: Restart CloudSoft service on AppServer
+      - name: Restart MyWebApp service on AppServer
         run: |
-          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -p 2222 azureuser@localhost "sudo systemctl restart cloudsoft"
+          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -p 2222 azureuser@localhost "sudo systemctl restart MyWebApp.service"
