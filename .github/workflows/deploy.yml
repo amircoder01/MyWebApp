@@ -54,17 +54,22 @@ jobs:
           echo "${{ secrets.BASTION_KEY }}" > bastion_key.pem
           chmod 600 bastion_key.pem
 
+      - name: Save AppServer SSH key
+        run: |
+          echo "${{ secrets.APPSERVER_KEY }}" > appserver_key.pem
+          chmod 600 appserver_key.pem
+
       - name: Start SSH tunnel from Bastion → AppServer
         run: |
-          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
+          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -f -N -L 2222:10.0.0.4:22 azureuser@${{ secrets.BASTION_HOST }}
           sleep 5
 
       - name: Copy MyWebApp files to AppServer via tunnel
         run: |
           eval "$(ssh-agent -s)"
-          ssh-add bastion_key.pem
+          ssh-add appserver_key.pem
           scp -o StrictHostKeyChecking=no -P 2222 -r ./mywebapp-artifacts/* azureuser@localhost:/opt/MyWebApp/
 
       - name: Restart MyWebApp service on AppServer
         run: |
-          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -p 2222 azureuser@localhost "sudo systemctl restart MyWebApp"
+          ssh -i appserver_key.pem -o StrictHostKeyChecking=no -p 2222 azureuser@localhost "sudo systemctl restart MyWebApp"
