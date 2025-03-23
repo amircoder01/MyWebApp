@@ -45,17 +45,15 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Copy files to Reverse Proxy Server (not Bastion Host)
+    - name: Copy files to Reverse Proxy Server via SCP
       run: |
-        # Skicka artefakterna till Reverse Proxy Server via SCP
-        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@reverse-proxy-server-ip:/opt/MyWebApp/
+        # Använd localhost eftersom tunneln är öppen på port 2222
+        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
-    - name: Restart Reverse Proxy Server
+    - name: Restart Reverse Proxy (Nginx)
       run: |
-        # Om du har Nginx som reverse proxy, behöver du starta om den för att ladda nya filer
         sudo systemctl restart nginx
 
-    - name: Restart the App service on the App Server
+    - name: Restart the App service on App Server
       run: |
-        # Starta om appen på app-servern om det behövs
         sudo systemctl restart MyWebApp.service
