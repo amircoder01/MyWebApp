@@ -14,7 +14,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Aktivera HTTPS-omdirigering om du vill
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
