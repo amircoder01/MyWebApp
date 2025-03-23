@@ -10,6 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
@@ -45,29 +46,29 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Start SSH Tunnel from GitHub Actions
+    - name: Start SSH Tunnel and Wait for it to be available
       run: |
-        # Start SSH tunnel and keep it open in the background
+        # Start SSH tunnel from Bastion Host
         ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
-        # Give the tunnel time to establish
+        # Wait a bit to ensure the tunnel is up
         sleep 20
-        # Verify that the tunnel is up (optional)
+        # Verify if tunnel is up
         netstat -an | grep 2222
 
     - name: Test SSH tunnel
       run: |
         # Test if we can connect via the tunnel
-        ssh -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+        ssh -i /path/to/your/private-key -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
-    - name: Copy files to Reverse Proxy via SCP
+    - name: Stop the application service
       run: |
-        # Copy the files over to the Reverse Proxy server using SCP
-        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
+        sudo systemctl stop MyWebApp.service
 
-    - name: Restart Reverse Proxy (Nginx)
+    - name: Deploy the application
       run: |
-        sudo systemctl restart nginx
+        # Copy the files over to the server using SCP via the tunnel
+        scp -i  C:\Users\99amiqur\Downloads -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
-    - name: Restart App service on App Server
+    - name: Start the application service
       run: |
-        sudo systemctl restart MyWebApp.service
+        sudo systemctl start MyWebApp.service
