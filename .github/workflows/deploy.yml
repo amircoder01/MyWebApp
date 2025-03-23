@@ -38,7 +38,6 @@ jobs:
   deploy:
     runs-on: self-hosted
     needs: build
-
     steps:
     - name: Download the artifacts from Github (from the build job)
       uses: actions/download-artifact@v4
@@ -48,7 +47,7 @@ jobs:
     - name: Start SSH Tunnel and Wait for it to be available
       run: |
         # Start SSH tunnel from Bastion Host
-        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
+        ssh -f -N -L 2222:10.0.0.4:22 -i ~/.ssh/bastion_private_key azureuser@98.71.41.249
         # Wait a bit to ensure the tunnel is up
         sleep 20
         # Verify if tunnel is up
