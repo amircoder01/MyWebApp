@@ -45,18 +45,18 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Start SSH Tunnel and Wait for it to be available
+    - name: Start SSH Tunnel via Bastion Host
       run: |
-        # Start SSH tunnel in the background
+        # Start SSH tunnel from Bastion Host and wait for it to establish
         ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
-        # Give the tunnel some time to establish
+        # Wait a bit to ensure the tunnel is established
         sleep 20
-        # Verify if the tunnel is up by checking port 2222
+        # Check if the tunnel is up and listening on port 2222
         netstat -an | grep 2222
 
-    - name: Test SSH tunnel connection
+    - name: Test SSH Tunnel Connection
       run: |
-        # Test if we can connect via the tunnel
+        # Test if we can connect via the tunnel and ensure it's working
         ssh -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
@@ -65,7 +65,7 @@ jobs:
 
     - name: Deploy the application
       run: |
-        # Copy the files over to the server using SCP via the tunnel
+        # Copy the app files to the server using SCP via the tunnel
         scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Start the application service
