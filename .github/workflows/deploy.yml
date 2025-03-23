@@ -47,7 +47,7 @@ jobs:
     - name: Create private SSH key file from secret
       run: |
         echo "${{ secrets.BASTION_SSH_KEY }}" > /tmp/bastion_key.pem
-        chmod 600 /tmp/bastion_key.pem  # Set the correct permissions
+        chmod 600 /tmp/bastion_key.pem  # Se till att den privata nyckeln har rätt behörigheter
 
     - name: Start SSH Tunnel and Wait for it to be available
       run: |
@@ -61,7 +61,7 @@ jobs:
     - name: Test SSH tunnel
       run: |
         # Test if we can connect via the tunnel using GitHub Secret for private key
-        ssh -i /tmp/bastion_key.pem -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+        ssh -v -i /tmp/bastion_key.pem -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
       run: |
