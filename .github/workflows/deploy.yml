@@ -45,10 +45,18 @@ jobs:
       with:
         name: app-artifacts
 
-    # Kontrollera om tunneln är uppe genom att försöka ansluta direkt via SSH
+    - name: Start SSH Tunnel and Wait for it to be available
+      run: |
+        # Start SSH tunnel in the background
+        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
+        # Give the tunnel some time to establish
+        sleep 20
+        # Verify if the tunnel is up by checking port 2222
+        netstat -an | grep 2222
+
     - name: Test SSH tunnel connection
       run: |
-        # Försök att ansluta till tunneln via SSH och kolla om den är uppe
+        # Test if we can connect via the tunnel
         ssh -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
@@ -57,7 +65,7 @@ jobs:
 
     - name: Deploy the application
       run: |
-        # Kopiera filerna till servern via SCP via tunneln
+        # Copy the files over to the server using SCP via the tunnel
         scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Start the application service
