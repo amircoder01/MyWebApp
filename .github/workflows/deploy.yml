@@ -10,7 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
@@ -46,19 +45,15 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Start SSH Tunnel and Wait for it to be available
+    # Här borttar vi SSH-tunnel öppningen, eftersom den redan är öppen
+    - name: Test if tunnel is up (using netstat)
       run: |
-        # Start SSH tunnel and keep it open in the background
-        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
-        # Give the tunnel time to establish
-        sleep 20
-        # Verify that the tunnel is up
-        netstat -an | grep 2222
+        netstat -an | grep 2222  # Kolla om tunneln är öppen på port 2222
 
     - name: Test SSH tunnel
       run: |
-        # Test if we can connect via the tunnel with verbose output for debugging
-        ssh -v -p 2222 azureuser@localhost 'echo Tunnel is working'
+        # Testa om vi kan ansluta via tunneln
+        ssh -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
       run: |
@@ -66,7 +61,7 @@ jobs:
 
     - name: Deploy the application
       run: |
-        # Copy the files over to the server using SCP via the tunnel
+        # Kopiera filerna till servern via SCP via tunneln
         scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Start the application service
