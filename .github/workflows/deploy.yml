@@ -27,11 +27,6 @@ jobs:
         dotnet build --no-restore
         dotnet publish -c Release -o ./publish  
 
-    - name: Ensure SSH tunnel is up
-      run: |
-        ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
-        sleep 5 # wait for the tunnel to open
-        
     - name: List contents of publish folder
       run: ls -R ./publish
 
@@ -51,14 +46,19 @@ jobs:
       with:
         name: app-artifacts
 
+    - name: Ensure SSH tunnel is up
+      run: |
+        ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &  # Startar SSH tunneln
+        sleep 5  # Vänta på att tunneln öppnas
+
     - name: Stop the application service
       run: |
-        sudo systemctl stop MyWebApp.service        
+        sudo systemctl stop MyWebApp.service
 
     - name: Deploy the application
       run: |
-        sudo rm -Rf /opt/MyWebApp || true
-        sudo cp -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/ /opt/MyWebApp        
+        scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
+        # Kopiera filerna till app-servern via tunneln (localhost på port 2222)
 
     - name: Start the application service
       run: |
