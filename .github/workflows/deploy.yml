@@ -46,12 +46,14 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Ensure SSH tunnel is up
+    - name: Start SSH Tunnel and Wait for it to be available
       run: |
-        # Start the SSH tunnel and keep it open in the background
+        # Start SSH tunnel and keep it open in the background
         nohup ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 &
-        # Wait for 20 seconds to ensure the tunnel is up
-        sleep 20  # Extended wait time for better stability
+        # Give the tunnel time to establish
+        sleep 20
+        # Verify that the tunnel is up
+        netstat -an | grep 2222
 
     - name: Test SSH tunnel
       run: |
