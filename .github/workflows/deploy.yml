@@ -47,7 +47,7 @@ jobs:
     - name: Start SSH Tunnel and Wait for it to be available
       run: |
         # Start SSH tunnel from Bastion Host
-        ssh -f -N -L 2222:10.0.0.4:22 -i ~/.ssh/bastion_private_key azureuser@98.71.41.249
+        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
         # Wait a bit to ensure the tunnel is up
         sleep 20
         # Verify if tunnel is up
@@ -56,7 +56,7 @@ jobs:
     - name: Test SSH tunnel
       run: |
         # Test if we can connect via the tunnel using GitHub Secret for private key
-        ssh -i ${{ secrets.BASTION_SSH_PRIVATE_KEY }} -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+        ssh -i "${{ secrets.BASTION_SSH_PRIVATE_KEY }}" -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
       run: |
@@ -65,7 +65,7 @@ jobs:
     - name: Deploy the application
       run: |
         # Copy the files over to the server using SCP via the tunnel
-        scp -i ${{ secrets.BASTION_SSH_PRIVATE_KEY }} -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
+        scp -i "${{ secrets.BASTION_SSH_PRIVATE_KEY }}" -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Start the application service
       run: |
