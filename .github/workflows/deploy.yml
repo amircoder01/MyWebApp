@@ -67,7 +67,7 @@ jobs:
     - name: Deploy the application
       run: |
         # Copy the files over to the server using SCP via the tunnel
-        scp -i  C:\Users\99amiqur\Downloads -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
+        scp -i  C:\Users\99amiqur\Downloads\BastionHost_key (1).pem -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Start the application service
       run: |
