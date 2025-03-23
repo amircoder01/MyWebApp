@@ -59,10 +59,10 @@ jobs:
           echo "${{ secrets.APPSERVER_KEY }}" > appserver_key.pem
           chmod 600 appserver_key.pem
 
-      - name: Start SSH tunnel from Bastion → AppServer
-        run: |
-          ssh -i bastion_key.pem -o StrictHostKeyChecking=no -f -N -L 2222:10.0.0.4:22 azureuser@${{ secrets.BASTION_HOST }}
-          sleep 5
+      - name: Starta SSH-tunnel från Bastion → AppServer
+    run: |
+      ssh -i bastion_key.pem -o StrictHostKeyChecking=no -f -N -L 2222:10.0.0.4:22 azureuser@${{ secrets.BASTION_HOST }}
+      sleep 5
 
       - name: Copy MyWebApp files to AppServer via tunnel
         run: |
