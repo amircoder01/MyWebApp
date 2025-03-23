@@ -45,15 +45,29 @@ jobs:
       with:
         name: app-artifacts
 
-    - name: Copy files to Reverse Proxy Server via SCP
+    - name: Start SSH Tunnel from GitHub Actions
       run: |
-        # Använd localhost eftersom tunneln är öppen på port 2222
+        # Start SSH tunnel and keep it open in the background
+        ssh -f -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249
+        # Give the tunnel time to establish
+        sleep 20
+        # Verify that the tunnel is up (optional)
+        netstat -an | grep 2222
+
+    - name: Test SSH tunnel
+      run: |
+        # Test if we can connect via the tunnel
+        ssh -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
+
+    - name: Copy files to Reverse Proxy via SCP
+      run: |
+        # Copy the files over to the Reverse Proxy server using SCP
         scp -P 2222 -r /home/azureuser/actions-runner/_work/MyWebApp/MyWebApp/* azureuser@localhost:/opt/MyWebApp/
 
     - name: Restart Reverse Proxy (Nginx)
       run: |
         sudo systemctl restart nginx
 
-    - name: Restart the App service on App Server
+    - name: Restart App service on App Server
       run: |
         sudo systemctl restart MyWebApp.service
