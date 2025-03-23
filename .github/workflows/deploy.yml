@@ -45,15 +45,11 @@ jobs:
       with:
         name: app-artifacts
 
-    # Här borttar vi SSH-tunnel öppningen, eftersom den redan är öppen
-    - name: Test if tunnel is up (using netstat)
+    # Kontrollera om tunneln är uppe genom att försöka ansluta direkt via SSH
+    - name: Test SSH tunnel connection
       run: |
-        netstat -an | grep 2222  # Kolla om tunneln är öppen på port 2222
-
-    - name: Test SSH tunnel
-      run: |
-        # Testa om vi kan ansluta via tunneln
-        ssh -p 2222 azureuser@localhost 'echo Tunnel is working'
+        # Försök att ansluta till tunneln via SSH och kolla om den är uppe
+        ssh -o ConnectTimeout=10 -p 2222 azureuser@localhost 'echo Tunnel is working'
 
     - name: Stop the application service
       run: |
