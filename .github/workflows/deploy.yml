@@ -47,9 +47,9 @@ jobs:
 
     - name: Ensure SSH tunnel is up
       run: |
-        # Start the SSH tunnel and keep it open
+        # Start the SSH tunnel and keep it open in the background
         nohup ssh -A -N -L 2222:10.0.0.4:22 azureuser@98.71.41.249 & 
-        # Wait for 10 seconds to ensure the tunnel is up
+        # Wait for the tunnel to establish
         sleep 10
         
     - name: Test SSH tunnel
